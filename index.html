@@ -1,271 +1,686 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Chat DUQUEL</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: #0b141a;
-      color: #e9edef;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      overflow: hidden;
-    }
-    .chat-container {
-      width: 100%;
-      max-width: 480px;
-      height: 100vh;
-      background-color: #0b141a;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-    }
-    .user-modal {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: #111b21;
-      display: flex; flex-direction: column; justify-content: center; align-items: center;
-      padding: 20px; z-index: 10;
-    }
-    .user-modal h2 { color: #00a884; margin-bottom: 20px; font-size: 20px; }
-    .user-modal input {
-      width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #2a3942;
-      background-color: #202c33; color: #e9edef; font-size: 16px; margin-bottom: 15px; outline: none;
-    }
-    .user-modal button {
-      width: 100%; padding: 12px; border-radius: 8px; border: none;
-      background-color: #00a884; color: #111b21; font-weight: bold; font-size: 16px; cursor: pointer;
-    }
-    .chat-header {
-      background-color: #202c33; padding: 10px 16px; display: flex; align-items: center; gap: 12px;
-    }
-    .avatar {
-      width: 40px; height: 40px; border-radius: 50%; background-color: #00a884;
-      display: flex; align-items: center; justify-content: center; font-weight: bold; color: #111b21;
-    }
-    .header-info h3 { font-size: 16px; color: #e9edef; }
-    .header-info p { font-size: 12px; color: #8696a0; }
-    .chat-messages {
-      flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
-      background-color: #0b141a;
-    }
-    .message {
-      max-width: 80%; padding: 8px 12px; border-radius: 8px; font-size: 14px;
-      line-height: 18px; position: relative; word-wrap: break-word;
-    }
-    .message.received { align-self: flex-start; background-color: #202c33; }
-    .message.sent { align-self: flex-end; background-color: #005c4b; }
-    .message-sender { font-size: 11px; font-weight: bold; color: #53bdeb; margin-bottom: 3px; }
-    .reply-quote {
-      background: rgba(0,0,0,0.2); border-left: 3px solid #00a884; padding: 4px 8px;
-      border-radius: 4px; margin-bottom: 6px; font-size: 12px; color: #8696a0;
-    }
-    .message-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; gap: 10px; }
-    .message-time { font-size: 10px; color: #8696a0; }
-    .msg-actions { display: flex; gap: 8px; font-size: 11px; }
-    .action-btn { cursor: pointer; opacity: 0.7; }
-    .action-btn:hover { opacity: 1; }
-    .reply-preview {
-      background-color: #111b21; padding: 8px 12px; display: none; justify-content: space-between;
-      align-items: center; border-left: 4px solid #00a884; font-size: 13px; color: #8696a0;
-    }
-    
-    .chat-input-container {
-      background-color: #202c33;
-      padding: 10px 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      position: sticky;
-      bottom: 0;
-      width: 100%;
-      z-index: 5;
-    }
-    .chat-input {
-      flex: 1;
-      background-color: #2a3942;
-      border: 1px solid transparent;
-      border-radius: 20px;
-      padding: 12px 16px;
-      color: #e9edef;
-      font-size: 16px; 
-      outline: none;
-      -webkit-appearance: none;
-    }
-    .chat-input:focus {
-      border-color: #00a884;
-    }
-    .send-btn {
-      background-color: #00a884;
-      border: none;
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      flex-shrink: 0;
-      transition: background-color 0.2s ease;
-    }
-    .send-btn:active {
-      background-color: #008f6f;
-    }
-    .send-btn svg {
-      fill: #111b21;
-      width: 20px;
-      height: 20px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Chat Grupal</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#0b141a;
+    --bg-header:#202c33;
+    --bubble-in:#202c33;
+    --bubble-out:#005c4b;
+    --text:#e9edef;
+    --text-dim:#8696a0;
+    --accent:#00a884;
+    --danger:#f15c6d;
+    --border:#2a3942;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    height:100%;
+    margin:0;
+    padding:0;
+  }
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    display:flex;
+    flex-direction:column;
+    height:100dvh;
+    overflow:hidden;
+  }
+
+  /* ---------- HEADER ---------- */
+  #app-header{
+    background:var(--bg-header);
+    padding:14px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    border-bottom:1px solid var(--border);
+    flex-shrink:0;
+    z-index:5;
+  }
+  #app-header h1{
+    font-size:17px;
+    margin:0;
+    font-weight:600;
+  }
+  #app-header .user-tag{
+    font-size:12px;
+    color:var(--text-dim);
+  }
+  #logout-btn{
+    background:none;
+    border:none;
+    color:var(--text-dim);
+    font-size:12px;
+    cursor:pointer;
+    padding:6px 10px;
+    border-radius:6px;
+  }
+  #logout-btn:active{background:rgba(255,255,255,0.08);}
+
+  /* ---------- MESSAGES ---------- */
+  #messages{
+    flex:1;
+    overflow-y:auto;
+    padding:14px 10px;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(255,255,255,0.02) 0, transparent 40%),
+      radial-gradient(circle at 80% 60%, rgba(255,255,255,0.02) 0, transparent 40%);
+  }
+  .msg-row{
+    display:flex;
+    flex-direction:column;
+    max-width:78%;
+    margin-bottom:8px;
+    animation:fadeIn .15s ease-out;
+  }
+  @keyframes fadeIn{
+    from{opacity:0; transform:translateY(4px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  .msg-row.own{
+    align-self:flex-end;
+    align-items:flex-end;
+  }
+  .msg-row.other{
+    align-self:flex-start;
+    align-items:flex-start;
+  }
+  .bubble{
+    position:relative;
+    padding:8px 10px 6px 10px;
+    border-radius:10px;
+    font-size:14.5px;
+    line-height:1.35;
+    word-wrap:break-word;
+    white-space:pre-wrap;
+    box-shadow:0 1px 1px rgba(0,0,0,.3);
+  }
+  .msg-row.own .bubble{
+    background:var(--bubble-out);
+    border-top-right-radius:2px;
+  }
+  .msg-row.other .bubble{
+    background:var(--bubble-in);
+    border-top-left-radius:2px;
+  }
+  .sender-name{
+    font-size:12.5px;
+    font-weight:700;
+    margin-bottom:2px;
+    color:#7fd0c2;
+  }
+  .msg-row.own .sender-name{
+    display:none;
+  }
+  .reply-quote{
+    background:rgba(0,0,0,0.2);
+    border-left:3px solid var(--accent);
+    border-radius:6px;
+    padding:5px 8px;
+    margin-bottom:5px;
+    font-size:12.5px;
+    color:var(--text-dim);
+    max-height:40px;
+    overflow:hidden;
+  }
+  .reply-quote b{
+    color:#7fd0c2;
+    display:block;
+    font-size:11.5px;
+  }
+  .msg-content{
+    display:block;
+  }
+  .msg-meta{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin-top:3px;
+    font-size:10.5px;
+    color:var(--text-dim);
+    justify-content:flex-end;
+  }
+  .msg-actions{
+    display:flex;
+    gap:10px;
+    margin-top:2px;
+    padding:0 4px;
+  }
+  .msg-actions button{
+    background:none;
+    border:none;
+    color:var(--text-dim);
+    font-size:11px;
+    cursor:pointer;
+    padding:2px 4px;
+  }
+  .msg-actions button.delete-btn{
+    color:var(--danger);
+  }
+  .msg-actions button:active{opacity:.6;}
+
+  #empty-state{
+    margin:auto;
+    text-align:center;
+    color:var(--text-dim);
+    font-size:13px;
+    padding:20px;
+  }
+
+  /* ---------- REPLY PREVIEW BAR ---------- */
+  #reply-preview{
+    display:none;
+    background:var(--bg-header);
+    border-top:1px solid var(--border);
+    padding:8px 12px;
+    align-items:center;
+    justify-content:space-between;
+    flex-shrink:0;
+  }
+  #reply-preview.active{display:flex;}
+  #reply-preview .rp-content{
+    border-left:3px solid var(--accent);
+    padding-left:8px;
+    overflow:hidden;
+  }
+  #reply-preview .rp-content b{
+    display:block;
+    font-size:12px;
+    color:var(--accent);
+  }
+  #reply-preview .rp-content span{
+    display:block;
+    font-size:12.5px;
+    color:var(--text-dim);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    max-width:80vw;
+  }
+  #reply-preview .rp-close{
+    background:none;
+    border:none;
+    color:var(--text-dim);
+    font-size:20px;
+    cursor:pointer;
+    padding:0 6px;
+    flex-shrink:0;
+  }
+
+  /* ---------- INPUT BAR ---------- */
+  #input-bar{
+    display:flex;
+    align-items:flex-end;
+    gap:8px;
+    padding:8px 10px;
+    background:var(--bg-header);
+    border-top:1px solid var(--border);
+    flex-shrink:0;
+  }
+  #msg-input{
+    flex:1;
+    resize:none;
+    border:none;
+    outline:none;
+    background:#2a3942;
+    color:var(--text);
+    border-radius:20px;
+    padding:10px 16px;
+    font-size:16px; /* evita zoom automático en iOS/Android */
+    max-height:100px;
+    line-height:1.3;
+    font-family:inherit;
+  }
+  #msg-input::placeholder{color:var(--text-dim);}
+  #send-btn{
+    background:var(--accent);
+    border:none;
+    color:#0b141a;
+    width:42px;
+    height:42px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  #send-btn:active{opacity:.8;}
+  #send-btn svg{width:20px;height:20px;}
+
+  /* ---------- MODAL ---------- */
+  #login-modal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.75);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:100;
+    padding:20px;
+  }
+  #login-modal.hidden{display:none;}
+  #login-box{
+    background:var(--bg-header);
+    border-radius:12px;
+    padding:24px 20px;
+    width:100%;
+    max-width:340px;
+    text-align:center;
+  }
+  #login-box h2{
+    margin:0 0 6px 0;
+    font-size:19px;
+  }
+  #login-box p{
+    color:var(--text-dim);
+    font-size:13px;
+    margin:0 0 18px 0;
+  }
+  #username-input{
+    width:100%;
+    padding:12px 14px;
+    border-radius:8px;
+    border:1px solid var(--border);
+    background:#111b21;
+    color:var(--text);
+    font-size:16px; /* evita zoom automático */
+    outline:none;
+    margin-bottom:14px;
+  }
+  #username-input:focus{border-color:var(--accent);}
+  #join-btn{
+    width:100%;
+    padding:12px;
+    background:var(--accent);
+    border:none;
+    color:#0b141a;
+    font-weight:700;
+    font-size:15px;
+    border-radius:8px;
+    cursor:pointer;
+  }
+  #join-btn:active{opacity:.85;}
+  #login-error{
+    color:var(--danger);
+    font-size:12px;
+    margin-top:8px;
+    min-height:14px;
+  }
+
+  /* Scrollbar sutil */
+  #messages::-webkit-scrollbar{width:5px;}
+  #messages::-webkit-scrollbar-thumb{background:#374751;border-radius:10px;}
+</style>
 </head>
 <body>
 
-  <div class="chat-container">
-    <div class="user-modal" id="userModal">
-      <h2>Ingresa tu nombre</h2>
-      <input type="text" id="usernameInput" placeholder="Ej. Juan" required>
-      <button onclick="guardarNombre()">Entrar al Chat</button>
-    </div>
-
-    <div class="chat-header">
-      <div class="avatar">D</div>
-      <div class="header-info">
-        <h3>Grupo DUQUEL</h3>
-        <p>Chat interactivo en vivo</p>
-      </div>
-    </div>
-
-    <div class="chat-messages" id="chatMessages"></div>
-
-    <div class="reply-preview" id="replyPreview">
-      <span id="replyText">Respondiendo a...</span>
-      <span style="cursor:pointer; font-weight:bold; font-size:16px;" onclick="cancelarRespuesta()">✕</span>
-    </div>
-
-    <form class="chat-input-container" id="messageForm">
-      <input 
-        type="text" 
-        class="chat-input" 
-        id="messageInput" 
-        placeholder="Escribe un mensaje aquí..." 
-        autocomplete="off" 
-        required 
-        enterkeyhint="send"
-      >
-      <button type="submit" class="send-btn" aria-label="Enviar mensaje">
-        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
-      </button>
-    </form>
+<!-- MODAL DE ACCESO -->
+<div id="login-modal">
+  <div id="login-box">
+    <h2>Bienvenido 👋</h2>
+    <p>Ingresá tu nombre para entrar al chat grupal</p>
+    <input type="text" id="username-input" maxlength="24" placeholder="Tu nombre" autocomplete="off">
+    <button id="join-btn">Entrar al chat</button>
+    <div id="login-error"></div>
   </div>
+</div>
 
-  <script>
-    const SUPABASE_URL = 'https://aostkmwlqecnndnpajpl.supabase.co';
-    const SUPABASE_ANON_KEY = 'EyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvc3RrbXdscWVjbm5kbnBhanBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1NDE2MDgsImV4cCI6MjEwMzExNzYwOH0.oxLl3qxt91wgKR5_r1VCYit8xxEz1uN9d6QF_QEfADo';
+<!-- HEADER -->
+<div id="app-header">
+  <div>
+    <h1>💬 Chat Grupal</h1>
+    <div class="user-tag" id="current-user-tag"></div>
+  </div>
+  <button id="logout-btn">Cambiar nombre</button>
+</div>
 
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    let usuarioActual = localStorage.getItem('chat_usuario') || '';
-    let respuestaActual = null;
+<!-- MENSAJES -->
+<div id="messages">
+  <div id="empty-state">No hay mensajes todavía. ¡Escribí el primero!</div>
+</div>
 
-    if (usuarioActual) document.getElementById('userModal').style.display = 'none';
+<!-- PREVIEW DE RESPUESTA -->
+<div id="reply-preview">
+  <div class="rp-content">
+    <b id="rp-name"></b>
+    <span id="rp-text"></span>
+  </div>
+  <button class="rp-close" id="rp-close">&times;</button>
+</div>
 
-    function guardarNombre() {
-      const input = document.getElementById('usernameInput').value.trim();
-      if (input) {
-        usuarioActual = input;
-        localStorage.setItem('chat_usuario', usuarioActual);
-        document.getElementById('userModal').style.display = 'none';
-      }
+<!-- BARRA DE ESCRITURA -->
+<div id="input-bar">
+  <textarea id="msg-input" rows="1" placeholder="Escribí un mensaje..."></textarea>
+  <button id="send-btn" aria-label="Enviar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="22" y1="2" x2="11" y2="13"></line>
+      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+    </svg>
+  </button>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- CONFIG SUPABASE ----------
+  const SUPABASE_URL = 'https://aostkmwlqecnndnpajpl.supabase.co';
+  const SUPABASE_ANON_KEY = 'EyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvc3RrbXdscWVjbm5kbnBhanBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1NDE2MDgsImV4cCI6MjEwMzExNzYwOH0.oxLl3qxt91wgKR5_r1VCYit8xxEz1uN9d6QF_QEfADo';
+  const TABLE_NAME = 'DUQUEL';
+
+  const { createClient } = supabase;
+  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // ---------- ESTADO ----------
+  const STORAGE_KEY = 'chat_username';
+  let currentUser = localStorage.getItem(STORAGE_KEY) || '';
+  let replyingTo = null; // { id, sender, content }
+  let lastRenderedIds = new Set();
+  let pollingInterval = null;
+
+  // ---------- REFERENCIAS DOM ----------
+  const loginModal = document.getElementById('login-modal');
+  const usernameInput = document.getElementById('username-input');
+  const joinBtn = document.getElementById('join-btn');
+  const loginError = document.getElementById('login-error');
+  const currentUserTag = document.getElementById('current-user-tag');
+  const logoutBtn = document.getElementById('logout-btn');
+
+  const messagesEl = document.getElementById('messages');
+  const emptyState = document.getElementById('empty-state');
+
+  const replyPreview = document.getElementById('reply-preview');
+  const rpName = document.getElementById('rp-name');
+  const rpText = document.getElementById('rp-text');
+  const rpClose = document.getElementById('rp-close');
+
+  const msgInput = document.getElementById('msg-input');
+  const sendBtn = document.getElementById('send-btn');
+
+  // ---------- UTILIDADES ----------
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+  }
+
+  function formatTime(isoString){
+    try{
+      const d = new Date(isoString);
+      return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    }catch(e){
+      return '';
     }
+  }
 
-    async function cargarMensajes() {
-      const { data, error } = await _supabase.from('DUQUEL').select('*').order('created_at', { ascending: true });
-      if (!error && data) {
-        const container = document.getElementById('chatMessages');
-        container.innerHTML = '';
-        
-        data.forEach(msg => {
-          const esPropio = msg.nombre === usuarioActual;
-          const hora = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+  function scrollToBottom(smooth){
+    messagesEl.scrollTo({
+      top: messagesEl.scrollHeight,
+      behavior: smooth ? 'smooth' : 'auto'
+    });
+  }
 
-          const msgDiv = document.createElement('div');
-          msgDiv.className = `message ${esPropio ? 'sent' : 'received'}`;
-          
-          let html = '';
-          // Muestra quién envió el mensaje
-          if (!esPropio) html += `<div class="message-sender">${msg.nombre || 'Anónimo'}</div>`;
-          
-          // Muestra si es una respuesta a otro mensaje
-          if (msg.mensaje && msg.mensaje.includes('::REPLY::')) {
-            const partes = msg.mensaje.split('::REPLY::');
-            html += `<div class="reply-quote">${partes[0]}</div><div>${partes[1]}</div>`;
-          } else {
-            // Muestra el mensaje normal (qué)
-            html += `<div>${msg.mensaje || ''}</div>`;
-          }
+  function isNearBottom(){
+    const threshold = 120;
+    return messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < threshold;
+  }
 
-          html += `
-            <div class="message-footer">
-              <div class="msg-actions">
-                <span class="action-btn" onclick="prepararRespuesta('${msg.nombre}', '${msg.mensaje}')">↩ Responder</span>
-                ${esPropio ? `<span class="action-btn" style="color:#ff5555;" onclick="borrarMensaje(${msg.id})">🗑 Borrar</span>` : ''}
-              </div>
-              <!-- Muestra la hora (cuándo) -->
-              <div class="message-time">${hora}</div>
-            </div>
-          `;
+  function autoResizeTextarea(){
+    msgInput.style.height = 'auto';
+    msgInput.style.height = Math.min(msgInput.scrollHeight, 100) + 'px';
+  }
 
-          msgDiv.innerHTML = html;
-          container.appendChild(msgDiv);
-        });
-        container.scrollTop = container.scrollHeight;
-      }
+  // ---------- LOGIN ----------
+  function showLoginModal(){
+    loginModal.classList.remove('hidden');
+    setTimeout(() => usernameInput.focus(), 100);
+  }
+
+  function hideLoginModal(){
+    loginModal.classList.add('hidden');
+  }
+
+  function initSession(){
+    if(currentUser){
+      currentUserTag.textContent = 'Conectado como ' + currentUser;
+      hideLoginModal();
+      startChat();
+    }else{
+      showLoginModal();
     }
+  }
 
-    function prepararRespuesta(autor, texto) {
-      respuestaActual = `${autor}: ${texto.replace(/::REPLY::.*/, '')}`;
-      document.getElementById('replyText').innerText = `Respondiendo a ${respuestaActual}`;
-      document.getElementById('replyPreview').style.display = 'flex';
-      document.getElementById('messageInput').focus();
-    }
-
-    function cancelarRespuesta() {
-      respuestaActual = null;
-      document.getElementById('replyPreview').style.display = 'none';
-    }
-
-    async function borrarMensaje(id) {
-      if (confirm("¿Seguro que quieres borrar este mensaje?")) {
-        await _supabase.from('DUQUEL').delete().eq('id', id);
-        cargarMensajes();
-      }
-    }
-
-    document.getElementById('messageForm').addEventListener('submit', async (e) => {
+  joinBtn.addEventListener('click', handleJoin);
+  usernameInput.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){
       e.preventDefault();
-      const input = document.getElementById('messageInput');
-      let texto = input.value.trim();
+      handleJoin();
+    }
+  });
 
-      if (texto && usuarioActual) {
-        if (respuestaActual) {
-          texto = `${respuestaActual}::REPLY::${texto}`;
-          cancelarRespuesta();
-        }
+  function handleJoin(){
+    const name = usernameInput.value.trim();
+    if(!name){
+      loginError.textContent = 'Por favor ingresá un nombre válido.';
+      return;
+    }
+    if(name.length > 24){
+      loginError.textContent = 'El nombre es demasiado largo.';
+      return;
+    }
+    loginError.textContent = '';
+    currentUser = name;
+    localStorage.setItem(STORAGE_KEY, currentUser);
+    currentUserTag.textContent = 'Conectado como ' + currentUser;
+    hideLoginModal();
+    startChat();
+  }
 
-        input.value = '';
-        const { error } = await _supabase.from('DUQUEL').insert([{ nombre: usuarioActual, mensaje: texto }]);
-        if (!error) cargarMensajes();
+  logoutBtn.addEventListener('click', function(){
+    if(confirm('¿Cambiar de nombre de usuario?')){
+      localStorage.removeItem(STORAGE_KEY);
+      currentUser = '';
+      usernameInput.value = '';
+      showLoginModal();
+    }
+  });
+
+  // ---------- RENDERIZADO DE MENSAJES ----------
+  function renderMessages(messages){
+    if(!messages || messages.length === 0){
+      messagesEl.innerHTML = '';
+      messagesEl.appendChild(emptyState);
+      return;
+    }
+
+    const shouldStickToBottom = isNearBottom();
+
+    messagesEl.innerHTML = '';
+    messages.forEach(function(msg){
+      const row = document.createElement('div');
+      const isOwn = msg.sender === currentUser;
+      row.className = 'msg-row ' + (isOwn ? 'own' : 'other');
+      row.dataset.id = msg.id;
+
+      let replyHtml = '';
+      if(msg.reply_to_sender || msg.reply_to_content){
+        replyHtml = '<div class="reply-quote"><b>' + escapeHtml(msg.reply_to_sender || '') + '</b>' +
+          escapeHtml(truncate(msg.reply_to_content || '', 80)) + '</div>';
       }
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.innerHTML =
+        '<div class="sender-name">' + escapeHtml(msg.sender) + '</div>' +
+        replyHtml +
+        '<span class="msg-content">' + escapeHtml(msg.content) + '</span>' +
+        '<div class="msg-meta">' + formatTime(msg.created_at) + '</div>';
+
+      row.appendChild(bubble);
+
+      const actions = document.createElement('div');
+      actions.className = 'msg-actions';
+
+      const replyBtn = document.createElement('button');
+      replyBtn.textContent = '↩ Responder';
+      replyBtn.addEventListener('click', function(){
+        setReplyTarget(msg);
+      });
+      actions.appendChild(replyBtn);
+
+      if(isOwn){
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-btn';
+        delBtn.textContent = '🗑 Borrar';
+        delBtn.addEventListener('click', function(){
+          handleDelete(msg.id);
+        });
+        actions.appendChild(delBtn);
+      }
+
+      row.appendChild(actions);
+      messagesEl.appendChild(row);
     });
 
-    cargarMensajes();
-    setInterval(cargarMensajes, 3000); // Recarga mensajes cada 3 segundos
-  </script>
+    if(shouldStickToBottom){
+      scrollToBottom(false);
+    }
+  }
+
+  function truncate(str, len){
+    if(str.length <= len) return str;
+    return str.slice(0, len) + '…';
+  }
+
+  // ---------- RESPUESTA (REPLY) ----------
+  function setReplyTarget(msg){
+    replyingTo = {
+      id: msg.id,
+      sender: msg.sender,
+      content: msg.content
+    };
+    rpName.textContent = 'Respondiendo a ' + msg.sender;
+    rpText.textContent = msg.content;
+    replyPreview.classList.add('active');
+    msgInput.focus();
+  }
+
+  function clearReplyTarget(){
+    replyingTo = null;
+    replyPreview.classList.remove('active');
+  }
+
+  rpClose.addEventListener('click', clearReplyTarget);
+
+  // ---------- ENVÍO DE MENSAJES ----------
+  async function handleSend(){
+    const content = msgInput.value.trim();
+    if(!content) return;
+
+    const payload = {
+      sender: currentUser,
+      content: content,
+      reply_to_sender: replyingTo ? replyingTo.sender : null,
+      reply_to_content: replyingTo ? replyingTo.content : null
+    };
+
+    sendBtn.disabled = true;
+
+    const { error } = await client.from(TABLE_NAME).insert([payload]);
+
+    sendBtn.disabled = false;
+
+    if(error){
+      alert('Error al enviar el mensaje: ' + error.message);
+      return;
+    }
+
+    msgInput.value = '';
+    autoResizeTextarea();
+    clearReplyTarget();
+    await fetchMessages();
+    scrollToBottom(true);
+  }
+
+  sendBtn.addEventListener('click', handleSend);
+  msgInput.addEventListener('keydown', function(e){
+    if(e.key === 'Enter' && !e.shiftKey){
+      e.preventDefault();
+      handleSend();
+    }
+  });
+  msgInput.addEventListener('input', autoResizeTextarea);
+
+  // ---------- BORRADO ----------
+  async function handleDelete(id){
+    if(!confirm('¿Borrar este mensaje?')) return;
+
+    const { error } = await client
+      .from(TABLE_NAME)
+      .delete()
+      .eq('id', id)
+      .eq('sender', currentUser); // seguridad extra: solo borra si es propio
+
+    if(error){
+      alert('Error al borrar el mensaje: ' + error.message);
+      return;
+    }
+    await fetchMessages();
+  }
+
+  // ---------- CARGA DE MENSAJES ----------
+  async function fetchMessages(){
+    const { data, error } = await client
+      .from(TABLE_NAME)
+      .select('*')
+      .order('created_at', { ascending: true });
+
+    if(error){
+      console.error('Error al obtener mensajes:', error.message);
+      return;
+    }
+
+    renderMessages(data);
+  }
+
+  // ---------- REALTIME + POLLING DE RESPALDO ----------
+  function subscribeRealtime(){
+    client
+      .channel('public:' + TABLE_NAME)
+      .on('postgres_changes', { event: '*', schema: 'public', table: TABLE_NAME }, function(){
+        fetchMessages();
+      })
+      .subscribe();
+  }
+
+  function startPollingFallback(){
+    // Polling corto como respaldo por si el realtime no está habilitado en la tabla
+    pollingInterval = setInterval(fetchMessages, 3000);
+  }
+
+  // ---------- INICIO DEL CHAT ----------
+  async function startChat(){
+    await fetchMessages();
+    scrollToBottom(false);
+    subscribeRealtime();
+    startPollingFallback();
+  }
+
+  // ---------- INICIALIZACIÓN ----------
+  initSession();
+
+})();
+</script>
 </body>
 </html>
-
