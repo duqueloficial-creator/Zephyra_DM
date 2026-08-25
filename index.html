@@ -926,8 +926,19 @@
 
   tabLogin.addEventListener('click', ()=>{ tabLogin.classList.add('active'); tabRegister.classList.remove('active'); loginForm.style.display='block'; registerForm.style.display='none'; });
   tabRegister.addEventListener('click', ()=>{ tabRegister.classList.add('active'); tabLogin.classList.remove('active'); registerForm.style.display='block'; loginForm.style.display='none'; });
-  function handleToEmail(h){ return h.toLowerCase()+FAKE_EMAIL_DOMAIN; }
-  function validHandle(h){ return /^[A-Za-z0-9$&._-]{3,20}$/.test(h); }
+  // Cualquier nombre sirve para el @: letras (con tildes/ñ/otros idiomas), números, espacios y . _ -
+  // Solo se limita el largo (3-20) para que quepa bien en la UI.
+  function validHandle(h){ return /^[\p{L}\p{N} ._-]{3,20}$/u.test(h); }
+  // Como Supabase Auth necesita un email válido para el login, generamos una versión
+  // "limpia" (sin tildes/espacios/símbolos raros) del @ SOLO para armar el email interno.
+  // El @ que el usuario ve y usa para todo (búsqueda, login, etc.) sigue siendo el original.
+  function slugifyHandle(h){
+    let s = h.normalize('NFD').replace(/[\u0300-\u036f]/g,''); // saca tildes
+    s = s.toLowerCase().replace(/[^a-z0-9._-]+/g,'_').replace(/_{2,}/g,'_').replace(/^_+|_+$/g,'');
+    if(!s) s = 'user';
+    return s.slice(0,40);
+  }
+  function handleToEmail(h){ return slugifyHandle(h)+FAKE_EMAIL_DOMAIN; }
 
   regPickAvatarBtn.addEventListener('click', ()=>regAvatarInput.click());
   regAvatarInput.addEventListener('change', function(){
@@ -943,7 +954,7 @@
     registerError.textContent='';
     const name=regName.value.trim(), handle=regHandle.value.trim(), birthdate=regBirthdate.value, password=regPassword.value;
     if(!name){ registerError.textContent='Ingresá tu nombre de pila.'; return; }
-    if(!validHandle(handle)){ registerError.textContent='El @ debe tener 3-20 caracteres: letras, números o $ & . _ -'; return; }
+    if(!validHandle(handle)){ registerError.textContent='El @ debe tener 3-20 caracteres (letras, números, espacios, puntos o guiones).'; return; }
     if(!birthdate){ registerError.textContent='Ingresá tu fecha de nacimiento.'; return; }
     if(!password || password.length<6){ registerError.textContent='La contraseña debe tener al menos 6 caracteres.'; return; }
 
@@ -952,9 +963,13 @@
       const { data: existing } = await client.from(PROFILES_TABLE).select('handle').ilike('handle', handle).limit(1);
       if(existing && existing.length>0) throw new Error('Ese @ ya está en uso, elegí otro.');
 
-      const { data: signUpData, error: signUpErr } = await client.auth.signUp({ email: handleToEmail(handle), password });
-      if(signUpErr) throw signUpErr;
-      if(!signUpData.session) throw new Error('No se pudo iniciar sesión automáticamente. Revisá que "Confirm email" esté desactivado en Supabase.');
+      const authSlug = slugifyHandle(handle);
+      const { data: signUpData, error: signUpErr } = await client.auth.signUp({ email: authSlug+FAKE_EMAIL_DOMAIN, password });
+      if(signUpErr){
+        if(/already registered|already exists/i.test(signUpErr.message||'')) throw new Error('Ese @ ya está en uso (o uno muy parecido), elegí otro.');
+        throw signUpErr;
+      }
+      if(!signUpData.session) throw new Error('No se pudo iniciar sesión automáticamente. Revisá que "Confirm email" esté desactivado en Supabase (Authentication > Providers > Email).');
 
       const newUser = signUpData.user;
       let avatarUrl=null;
@@ -964,8 +979,11 @@
         if(!upErr){ const { data: pub } = client.storage.from(AVATAR_BUCKET).getPublicUrl(path); avatarUrl = pub.publicUrl; }
       }
 
-      const { error: profileErr } = await client.from(PROFILES_TABLE).insert({ id:newUser.id, display_name:name, handle, birth_date:birthdate, avatar_url:avatarUrl, bio:'' });
-      if(profileErr) throw profileErr;
+      const { error: profileErr } = await client.from(PROFILES_TABLE).insert({ id:newUser.id, display_name:name, handle, auth_slug:authSlug, birth_date:birthdate, avatar_url:avatarUrl, bio:'' });
+      if(profileErr){
+        if(profileErr.code==='23505') throw new Error('Ese @ ya está en uso, elegí otro.');
+        throw profileErr;
+      }
 
       await onAuthReady();
     }catch(err){
@@ -981,7 +999,9 @@
     if(!handle || !password){ loginError.textContent='Completá el @ y la contraseña.'; return; }
     loginBtn.disabled=true; loginBtn.textContent='Entrando...';
     try{
-      const { error } = await client.auth.signInWithPassword({ email: handleToEmail(handle), password });
+      const { data: found } = await client.from(PROFILES_TABLE).select('auth_slug').ilike('handle', handle).limit(1).maybeSingle();
+      const email = (found && found.auth_slug) ? (found.auth_slug+FAKE_EMAIL_DOMAIN) : handleToEmail(handle);
+      const { error } = await client.auth.signInWithPassword({ email, password });
       if(error) throw new Error('Usuario o contraseña incorrectos.');
       await onAuthReady();
     }catch(err){
